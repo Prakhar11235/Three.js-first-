@@ -1,88 +1,66 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// Get canvas
+const canvas = document.querySelector('.draw');
+
+// Scene setup
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0,0,5);
+const renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1;
+renderer.outputEncoding = THREE.sRGBEncoding;
 
-const highIntensityLight=new THREE.DirectionalLight(0xffffff,2);
-highIntensityLight.position.set(10,20,15);
-scene.add(highIntensityLight);
+// Add orbit controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
 
-const DirectionalLight=new THREE.DirectionalLight(0xffffff,1);
-DirectionalLight.position.set(5,10,7.5);
-scene.add(DirectionalLight);
+// Load HDRI environment map
+new RGBELoader()
+    
+    .load('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/rustig_koppie_puresky_1k.hdr', function(texture) {
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        
+        scene.environment = texture;
+    });
 
-const ambientLight=new THREE.AmbientLight(0xffffff,0.5);
-scene.add(ambientLight);
-
-const pointLight=new THREE.PointLight(0xffffff,10);
-pointLight.position.set(0,5,0);
-scene.add(pointLight);
-const highIntensityLightHelper = new THREE.DirectionalLightHelper(highIntensityLight, 1);
-scene.add(highIntensityLightHelper);
-
-const DirectionalLightHelper = new THREE.DirectionalLightHelper(DirectionalLight, 1);
-scene.add(DirectionalLightHelper);
-
-const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.5);
-scene.add(pointLightHelper);
-
-
-let loader= new THREE.TextureLoader();
-let color=loader.load("./textures/color.jpg");
-let roughness=loader.load("./textures/roughness.jpg");
-let normals=loader.load("./textures/normal.png");
-let height=loader.load("./textures/height.jpg");
-
-const geometry = new THREE.BoxGeometry( 3,2,2 );
-const material = new THREE.MeshStandardMaterial( {map : color,roughnessMap:roughness,normalMap:normals} );
-const cube = new THREE.Mesh( geometry, material );
-scene.add( cube );
-
-camera.position.z = 5;
-
-const canvas = document.querySelector('canvas');
-const renderer = new THREE.WebGLRenderer({ canvas,antialias:true });
-renderer.setSize( window.innerWidth, window.innerHeight );
-window.addEventListener('resize', () => {
-  renderer.setSize( window.innerWidth, window.innerHeight );
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+const loader=new GLTFLoader();
+loader.load('./wooden_box.glb',function(gltf){
+  gltf.scene.position.y=-1;
+    scene.add(gltf.scene);
 });
 
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+// Add a test mesh
 
-const gui = new GUI();
 
-// Material folder
-const materialFolder = gui.addFolder('Material');
-materialFolder.add(material, 'roughness', 0, 1, 0.01);
-materialFolder.add(material, 'metalness', 0, 1, 0.01);
-materialFolder.add(material, 'wireframe');
-materialFolder.add(material.normalScale, 'x', 0, 2, 0.01).name('normalScale X');
-materialFolder.add(material.normalScale, 'y', 0, 2, 0.01).name('normalScale Y');
+// Position camera
+camera.position.z = 5;
 
-// Mesh folder
-const meshFolder = gui.addFolder('Mesh');
-meshFolder.add(cube.rotation, 'x', 0, Math.PI * 2, 0.01).name('rotate X');
-meshFolder.add(cube.rotation, 'y', 0, Math.PI * 2, 0.01).name('rotate Y');
-meshFolder.add(cube.rotation, 'z', 0, Math.PI * 2, 0.01).name('rotate Z');
-meshFolder.add(cube.position, 'x', -5, 5, 0.1).name('position X');
-meshFolder.add(cube.position, 'y', -5, 5, 0.1).name('position Y');
-meshFolder.add(cube.position, 'z', -5, 5, 0.1).name('position Z');
-meshFolder.add(cube.scale, 'x', 0.1, 3, 0.1).name('scale X');
-meshFolder.add(cube.scale, 'y', 0.1, 3, 0.1).name('scale Y');
-meshFolder.add(cube.scale, 'z', 0.1, 3, 0.1).name('scale Z');
+// Handle window resize
+window.addEventListener('resize', onWindowResize, false);
 
-const controls = new OrbitControls( camera, renderer.domElement );
-controls.enableDamping = true;
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
 
+// Animation loop
 function animate() {
-  window.requestAnimationFrame(animate);
-	renderer.render( scene, camera );
-  // cube.rotation.x += 0.01;
-  // cube.rotation.y += 0.01;
-  controls.update();
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+    gltf.scene.rotation.y += 0.1;
+    controls.update();
+
 }
 
 animate();
