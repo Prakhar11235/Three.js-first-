@@ -14,6 +14,8 @@ const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     antialias: true
 });
+const ambientLight=new THREE.AmbientLight(0xffffff,0.5);
+scene.add(ambientLight);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1;
@@ -33,10 +35,12 @@ new RGBELoader()
         scene.environment = texture;
     });
 
+let model;
 const loader=new GLTFLoader();
-loader.load('./wooden_box.glb',function(gltf){
-  gltf.scene.position.y=-1;
-    scene.add(gltf.scene);
+loader.load('./cyberCar.glb',function(gltf){
+  // gltf.scene.position.y=-1;
+  model=gltf.scene;
+    scene.add(model);
 });
 
 // Add a test mesh
@@ -57,9 +61,9 @@ function onWindowResize() {
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-    gltf.scene.rotation.y += 0.1;
+    model.rotation.y += 0.01;
     controls.update();
+    renderer.render(scene, camera);
 
 }
 
